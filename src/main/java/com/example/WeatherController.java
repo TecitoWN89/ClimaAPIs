@@ -30,24 +30,34 @@ public class WeatherController {
         return "Error retrieving weather data";
     }
 
+    
     @GetMapping("/{city}")
     public String getCity(@PathVariable String city){ 
-        RestTemplate restTemplate = new RestTemplate();
-        String geoUrl = GEO_API + "?q=" + city + "&limit=1&appid=" + API_KEY;
-        Geo[] geoResponse = restTemplate.getForObject(geoUrl, Geo[].class);
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String geoUrl = GEO_API + "?q=" + city + "&limit=1&appid=" + API_KEY;
+            Geo[] geoResponse = restTemplate.getForObject(geoUrl, Geo[].class);
 
+            if (geoResponse == null || geoResponse.length == 0) {
+                return "City not found: " + city;
+            }
 
-        if (geoResponse == null || geoResponse.length == 0) {
-            return "City not found: " + city;
+            String url = WEATHER_API + "?lat=" + geoResponse[0].getLat() + "&lon=" + geoResponse[0].getLon() + "&units=metric&appid=" + API_KEY; 
+
+            Weather weatherResponse = restTemplate.getForObject(url, Weather.class);
+        
+            if (weatherResponse != null && weatherResponse.getMain() != null) {
+
+                return weatherResponse.getName() + ": " + weatherResponse.getMain().getTemp() + "°C";
         }
 
-        String url = WEATHER_API + "?lat=" + geoResponse[0].getLat() + "&lon=" + geoResponse[0].getLon() + "&units=metric&appid=" + API_KEY; 
-        String result = restTemplate.getForObject(url, String.class);
-        if (result != null) {
-            return result;
+            return "Error retrieving weather data for " + city;
+        
+            } catch (Exception e) {
+            return "Error: " + e.getMessage();
         }
-
-        return "Error retrieving weather data";
-    }      
+    }
+    
 }
 
+ 
